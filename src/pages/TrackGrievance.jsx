@@ -2,22 +2,43 @@ import React, { useEffect, useState } from "react";
 import PortalLayout from "../components/PortalLayout";
 import GrievanceCard from "../components/GrievanceCard";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { grievances as grievanceList } from "../data/mockData";
+import Alert from "../components/Alert";
+import { fetchMyGrievances } from "../api/grievanceApi";
+import { getApiErrorMessage } from "../api/errorHandler";
 
 function TrackGrievance() {
   const [grievances, setGrievances] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setGrievances(grievanceList);
-      setLoading(false);
-    }, 700);
-    return () => clearTimeout(timer);
+    const loadGrievances = async () => {
+      try {
+        const data = await fetchMyGrievances();
+        setGrievances(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setError(getApiErrorMessage(err, "Unable to load grievances."));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadGrievances();
   }, []);
 
-  const filtered = grievances.filter((g) => g.id.toLowerCase().includes(query.toLowerCase()));
+  const normalized = grievances.map((item, idx) => ({
+    id: item.id || item.complaintId || item.grievanceId || `GRV-${1000 + idx}`,
+    title: item.title || "Untitled Grievance",
+    department: item.department || item.category || "Unassigned Department",
+    description: item.description || "No description provided.",
+    date: item.date || item.createdAt?.slice(0, 10) || "N/A",
+    status: String(item.status || "pending").toLowerCase().replace(/\s+/g, "_"),
+  }));
+
+  const filtered = normalized.filter((g) =>
+    g.id.toString().toLowerCase().includes(query.toLowerCase())
+  );
 
   return (
     <PortalLayout title="Track Grievance">
@@ -30,6 +51,8 @@ function TrackGrievance() {
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
+
+      {error && <Alert type="error" message={error} />}
 
       {loading ? (
         <LoadingSpinner />

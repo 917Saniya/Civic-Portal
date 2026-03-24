@@ -9,6 +9,7 @@ import {
   FolderKanban,
   ShieldCheck,
 } from "lucide-react";
+import { getRole } from "../utils/auth";
 
 const links = [
   { to: "/home", label: "Home", icon: Home },
@@ -21,7 +22,7 @@ const links = [
 
 function Sidebar({ open, onClose }) {
   const location = useLocation();
-  const role = localStorage.getItem("role");
+  const role = getRole();
 
   return (
     <>

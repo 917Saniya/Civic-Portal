@@ -1,11 +1,13 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
+import { getRole, getToken, isTokenExpired, clearAuthSession } from "../utils/auth";
 
 const ProtectedRoute = ({ children, requiredRole }) => {
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("role");
+  const token = getToken();
+  const role = getRole();
 
-  if (!token) {
+  if (!token || isTokenExpired(token)) {
+    clearAuthSession();
     return <Navigate to="/login" />;
   }
 

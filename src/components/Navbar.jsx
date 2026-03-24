@@ -1,15 +1,15 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Building2, LogOut, Menu, UserCircle } from "lucide-react";
+import { clearAuthSession, getRole, getToken } from "../utils/auth";
 
 function Navbar({ onToggleSidebar }) {
   const navigate = useNavigate();
-  const role = localStorage.getItem("role");
-  const isLoggedIn = Boolean(localStorage.getItem("token"));
+  const role = getRole();
+  const isLoggedIn = Boolean(getToken());
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
+    clearAuthSession();
     navigate("/login");
   };
 

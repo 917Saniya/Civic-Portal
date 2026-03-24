@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Lock, Mail, UserRound } from "lucide-react";
 import Alert from "../components/Alert";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { registerUser } from "../api/authApi";
+import { getApiErrorMessage } from "../api/errorHandler";
 
 function Register() {
   const [form, setForm] = useState({
@@ -16,16 +18,23 @@ function Register() {
   const [alert, setAlert] = useState(null);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setAlert(null);
 
-    setTimeout(() => {
+    try {
+      await registerUser(form);
       setAlert({ type: "success", message: "Registration successful. Please login." });
+      setTimeout(() => navigate("/login"), 700);
+    } catch (error) {
+      setAlert({
+        type: "error",
+        message: getApiErrorMessage(error, "Registration failed. Please try again."),
+      });
+    } finally {
       setLoading(false);
-      navigate("/login");
-    }, 900);
+    }
   };
 
   return (

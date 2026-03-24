@@ -1,9 +1,15 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import PortalLayout from "../components/PortalLayout";
 import GrievanceCard from "../components/GrievanceCard";
-import { grievances } from "../data/mockData";
+import LoadingSpinner from "../components/LoadingSpinner";
+import Alert from "../components/Alert";
+import { fetchMyGrievances } from "../api/grievanceApi";
+import { getApiErrorMessage } from "../api/errorHandler";
 
 function ManageComplaints() {
+  const [grievances, setGrievances] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [filters, setFilters] = useState({
     id: "",
     department: "",
@@ -11,16 +17,44 @@ function ManageComplaints() {
     date: "",
   });
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchMyGrievances();
+        setGrievances(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setError(getApiErrorMessage(err, "Unable to load complaint list."));
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const normalized = useMemo(
+    () =>
+      grievances.map((item, idx) => ({
+        id: item.id || item.complaintId || item.grievanceId || `GRV-${1000 + idx}`,
+        title: item.title || "Untitled Grievance",
+        department: item.department || item.category || "Unassigned Department",
+        description: item.description || "No description provided.",
+        date: item.date || item.createdAt?.slice(0, 10) || "N/A",
+        status: String(item.status || "pending").toLowerCase().replace(/\s+/g, "_"),
+      })),
+    [grievances]
+  );
+
   const filtered = useMemo(
     () =>
-      grievances.filter((g) => {
-        const idMatch = !filters.id || g.id.toLowerCase().includes(filters.id.toLowerCase());
+      normalized.filter((g) => {
+        const idMatch =
+          !filters.id || g.id.toString().toLowerCase().includes(filters.id.toLowerCase());
         const depMatch = !filters.department || g.department === filters.department;
         const statusMatch = !filters.status || g.status === filters.status;
         const dateMatch = !filters.date || g.date === filters.date;
         return idMatch && depMatch && statusMatch && dateMatch;
       }),
-    [filters]
+    [filters, normalized]
   );
 
   return (
@@ -57,11 +91,16 @@ function ManageComplaints() {
           onChange={(e) => setFilters({ ...filters, date: e.target.value })}
         />
       </div>
-      <div className="grievance-grid">
-        {filtered.map((g) => (
-          <GrievanceCard key={g.id} grievance={g} />
-        ))}
-      </div>
+      {error && <Alert type="error" message={error} />}
+      {loading ? (
+        <LoadingSpinner />
+      ) : (
+        <div className="grievance-grid">
+          {filtered.map((g) => (
+            <GrievanceCard key={g.id} grievance={g} />
+          ))}
+        </div>
+      )}
     </PortalLayout>
   );
 }

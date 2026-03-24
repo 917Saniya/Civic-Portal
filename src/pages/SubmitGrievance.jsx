@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import PortalLayout from "../components/PortalLayout";
 import Alert from "../components/Alert";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { submitGrievance } from "../api/grievanceApi";
+import { getApiErrorMessage } from "../api/errorHandler";
 
 function SubmitGrievance() {
   const [form, setForm] = useState({
@@ -12,12 +15,26 @@ function SubmitGrievance() {
   });
   const [attachment, setAttachment] = useState(null);
   const [notice, setNotice] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setNotice({ type: "success", message: "Grievance submitted successfully." });
-    setForm({ title: "", description: "", department: "Water", location: "", date: "" });
-    setAttachment(null);
+    setLoading(true);
+    setNotice(null);
+
+    try {
+      await submitGrievance(form, attachment);
+      setNotice({ type: "success", message: "Grievance submitted successfully." });
+      setForm({ title: "", description: "", department: "Water", location: "", date: "" });
+      setAttachment(null);
+    } catch (error) {
+      setNotice({
+        type: "error",
+        message: getApiErrorMessage(error, "Unable to submit grievance right now."),
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -83,8 +100,8 @@ function SubmitGrievance() {
         />
         {attachment && <p className="muted">Selected: {attachment.name}</p>}
 
-        <button type="submit" className="btn btn-primary">
-          Submit Grievance
+        <button type="submit" className="btn btn-primary" disabled={loading}>
+          {loading ? <LoadingSpinner /> : "Submit Grievance"}
         </button>
       </form>
     </PortalLayout>

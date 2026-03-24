@@ -3,6 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { Lock, Mail } from "lucide-react";
 import Alert from "../components/Alert";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { loginUser } from "../api/authApi";
+import { getApiErrorMessage } from "../api/errorHandler";
+import { extractRoleFromToken, setAuthSession } from "../utils/auth";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -11,23 +14,36 @@ function Login() {
   const [alert, setAlert] = useState(null);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setAlert(null);
 
-    setTimeout(() => {
-      const isAdmin = email.toLowerCase().includes("admin");
-      localStorage.setItem("token", "demo-auth-token");
-      localStorage.setItem("role", isAdmin ? "ADMIN" : "CITIZEN");
+    try {
+      const data = await loginUser({ email, password });
+      const token = data?.token || data?.jwt || data?.accessToken;
 
-      if (isAdmin) {
+      if (!token) {
+        throw new Error("Token missing in login response.");
+      }
+
+      const role = data?.role || extractRoleFromToken(token) || "CITIZEN";
+      setAuthSession(token, role);
+      setAlert({ type: "success", message: "Login successful." });
+
+      if (String(role).toUpperCase().includes("ADMIN")) {
         navigate("/admin");
       } else {
         navigate("/dashboard");
       }
+    } catch (error) {
+      setAlert({
+        type: "error",
+        message: getApiErrorMessage(error, "Invalid credentials. Please try again."),
+      });
+    } finally {
       setLoading(false);
-    }, 900);
+    }
   };
 
   return (
