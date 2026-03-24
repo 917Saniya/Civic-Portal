@@ -1,0 +1,29 @@
+body {
+  font-family: Arial, sans-serif;
+}
+
+h2 {
+  margin-bottom: 20px;
+}
+
+form {
+  margin: 20px 0;
+}
+
+input, textarea, select {
+  padding: 8px;
+  margin: 5px 0;
+  width: 250px;
+}
+
+button {
+  padding: 8px 15px;
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #125ea2;
+}
